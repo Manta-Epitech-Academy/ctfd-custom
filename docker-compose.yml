@@ -13,10 +13,19 @@ services:
       - ACCESS_LOG=-
       - ERROR_LOG=-
       - REVERSE_PROXY=true
+      # Preset admin for the workshop sync page's importer auth (see
+      # workshop_platform/plugins/workshop/syncpage.py). Unset by default —
+      # export these or put them in a gitignored .env before `docker compose
+      # up` (see .env.example). Without them the sync page just says so.
+      - PRESET_ADMIN_NAME=${WS_ADMIN_NAME:-}
+      - PRESET_ADMIN_EMAIL=${WS_ADMIN_EMAIL:-}
+      - PRESET_ADMIN_PASSWORD=${WS_ADMIN_PASSWORD:-}
+      - PRESET_ADMIN_TOKEN=${WS_ADMIN_TOKEN:-}
     volumes:
       - .data/CTFd/logs:/var/log/CTFd
       - .data/CTFd/uploads:/var/uploads
-      - .:/opt/CTFd:ro
+      - ./workshop_platform/plugins/workshop:/opt/CTFd/CTFd/plugins/workshop:ro
+      - ./workshop_platform/tools:/opt/workshop/tools:ro
     depends_on:
       permissions:
         condition: service_completed_successfully

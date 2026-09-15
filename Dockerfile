@@ -9,6 +9,7 @@ RUN apt-get update \
         libffi-dev \
         libssl-dev \
         git \
+        curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && python -m venv /opt/venv
@@ -16,6 +17,14 @@ RUN apt-get update \
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . /opt/CTFd
+
+# Vendor PyYAML and openpgp.js/confetti/lolight into the plugin (gitignored,
+# normally a host-side `tools/build_vendor.sh` step for the bind-mounted dev
+# setup) so the image is self-contained for deployments, like k8s, that run
+# from the image alone with no plugin bind mount.
+RUN bash workshop_platform/tools/build_vendor.sh \
+    && rm -rf CTFd/plugins/workshop \
+    && cp -r workshop_platform/plugins/workshop CTFd/plugins/workshop
 
 RUN pip install --no-cache-dir -r requirements.txt \
     && for d in CTFd/plugins/*; do \
@@ -36,7 +45,7 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --chown=1001:1001 . /opt/CTFd
+COPY --chown=1001:1001 --from=build /opt/CTFd /opt/CTFd
 
 RUN useradd \
     --no-log-init \
@@ -45,7 +54,12 @@ RUN useradd \
     ctfd \
     && mkdir -p /var/log/CTFd /var/uploads \
     && chown -R 1001:1001 /var/log/CTFd /var/uploads /opt/CTFd \
-    && chmod +x /opt/CTFd/docker-entrypoint.sh
+    && chmod +x /opt/CTFd/docker-entrypoint.sh \
+    # The workshop plugin's default WORKSHOP_TOOLS path, so a bare `docker run`
+    # of this image finds the tools without any env var. A dev bind mount at
+    # the same path (docker-compose.yml) overlays this symlink transparently.
+    && mkdir -p /opt/workshop \
+    && ln -s /opt/CTFd/workshop_platform/tools /opt/workshop/tools
 
 COPY --chown=1001:1001 --from=build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
