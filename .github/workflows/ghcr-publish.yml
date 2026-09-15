@@ -53,9 +53,21 @@ jobs:
             image_tag="${{ github.event.inputs.tag }}"
           fi
 
+          # yolo has no workshop_platform submodule/vendoring, so it stays
+          # multi-arch. Every other ref now bakes in a PyYAML wheel pinned to
+          # manylinux2014_x86_64 (workshop_platform/tools/build_vendor.sh), so
+          # build amd64 only there to avoid silently shipping a mismatched
+          # wheel in an arm64 image.
+          if [ "${{ github.ref }}" = "refs/heads/yolo" ]; then
+            platforms="linux/amd64,linux/arm64"
+          else
+            platforms="linux/amd64"
+          fi
+
           {
             echo "name=${image_name}"
             echo "tag=${image_tag}"
+            echo "platforms=${platforms}"
             echo "tags<<EOF"
             echo "${image_name}:${image_tag}"
             if [ -n "${image_tag_sha:-}" ]; then
@@ -68,6 +80,8 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -82,7 +96,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.image.outputs.platforms }}
           push: true
           provenance: false
           sbom: false
