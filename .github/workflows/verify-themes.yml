@@ -1,23 +1,7 @@
 ---
 name: Theme Verification
 
-on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'CTFd/themes/**/assets/**'
-      - 'CTFd/themes/**/package.json'
-      - 'CTFd/themes/**/yarn.lock'
-      - 'CTFd/themes/**/vite.config.js'
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'CTFd/themes/**/assets/**'
-      - 'CTFd/themes/**/package.json'
-      - 'CTFd/themes/**/yarn.lock'
-      - 'CTFd/themes/**/vite.config.js'
+on: workflow_dispatch
 
 jobs:
   build:

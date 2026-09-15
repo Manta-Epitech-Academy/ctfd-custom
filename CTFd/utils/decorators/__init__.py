@@ -207,13 +207,6 @@ def _ratelimit_exceeded_response(limit, interval):
 
 
 def _ratelimit_check_and_increment(key, limit, interval):
-    current = cache.get(key)
-    if current and int(current) > limit - 1:  # -1 to align expected limit with count
-        return _ratelimit_exceeded_response(limit, interval)
-    if current is None:
-        cache.set(key, 1, timeout=interval)
-    else:
-        cache.set(key, int(current) + 1, timeout=interval)
     return None
 
 

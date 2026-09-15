@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+      - yolo
     tags:
       - "v*"
   workflow_dispatch:
@@ -30,7 +31,10 @@ jobs:
       - name: Set image name and tags
         id: image
         run: |
-          if [ -n "${{ vars.GHCR_IMAGE_NAME }}" ]; then
+          if [ "${{ github.ref }}" = "refs/heads/yolo" ]; then
+            owner="${GITHUB_REPOSITORY%%/*}"
+            image_name="ghcr.io/${owner@L}/ctfd-yolo"
+          elif [ -n "${{ vars.GHCR_IMAGE_NAME }}" ]; then
             image_name="${{ vars.GHCR_IMAGE_NAME }}"
           else
             image_name="ghcr.io/${GITHUB_REPOSITORY@L}"
@@ -43,6 +47,8 @@ jobs:
           elif [ "${{ github.ref }}" = "refs/heads/master" ]; then
             image_tag="latest"
             image_tag_sha="sha-${GITHUB_SHA::7}"
+          elif [ "${{ github.ref }}" = "refs/heads/yolo" ]; then
+            image_tag="latest"
           else
             image_tag="${{ github.event.inputs.tag }}"
           fi
