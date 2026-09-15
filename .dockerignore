@@ -17,3 +17,6 @@ CTFd/uploads/**/*
 **/__pycache__
 .venv*
 venv*
+workshop_platform/*
+!workshop_platform/plugins
+!workshop_platform/tools
