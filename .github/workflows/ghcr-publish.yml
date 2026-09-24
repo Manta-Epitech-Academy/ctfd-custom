@@ -101,3 +101,78 @@ jobs:
           provenance: false
           sbom: false
           tags: ${{ steps.image.outputs.tags }}
+
+  # Rolls every CTFd instance so it picks up the image this run just pushed.
+  # `needs: docker` is what makes it conditional on a successful build, and the
+  # `if` keeps it to master: this workflow also fires on tags, releases, the
+  # `yolo` branch and workflow_dispatch, none of which should touch the cluster.
+  #
+  # The deployments pull on every start (imagePullPolicy: Always in
+  # jumper-k3s), so a restart is all that is needed; there is nothing to
+  # re-tag or re-apply.
+  restart-k3s:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          cat > ~/.kube/config <<KUBECONFIG
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - cluster:
+                server: ${{ secrets.K3S_URL }}
+                insecure-skip-tls-verify: true
+              name: k3s
+          contexts:
+            - context:
+                cluster: k3s
+                user: k3s-user
+              name: k3s
+          current-context: k3s
+          users:
+            - name: k3s-user
+              user:
+                token: ${{ secrets.K3S_TOKEN }}
+          KUBECONFIG
+          chmod 600 ~/.kube/config
+
+      - name: Restart every CTFd instance
+        run: |
+          set -euo pipefail
+
+          # Instances are found by the `app=ctfd` pod label rather than from a
+          # list kept here: an instance added later is covered the day its
+          # overlay is applied, and this file never has to know the topology.
+          namespaces=$(kubectl get pods -A -l app=ctfd \
+            -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' | sort -u)
+          if [ -z "$namespaces" ]; then
+            echo "::error::No CTFd instance found in the cluster."
+            exit 1
+          fi
+
+          echo "Restarting: $(echo "$namespaces" | tr '\n' ' ')"
+          while read -r ns; do
+            kubectl rollout restart deploy/ctfd -n "$ns"
+          done <<< "$namespaces"
+
+          failed=""
+          while read -r ns; do
+            if kubectl rollout status deploy/ctfd -n "$ns" --timeout=300s >/dev/null; then
+              echo "  ok   $ns"
+            else
+              echo "  FAIL $ns"
+              failed="$failed $ns"
+            fi
+          done <<< "$namespaces"
+
+          if [ -n "$failed" ]; then
+            echo "::error::Rollout did not complete for:$failed"
+            exit 1
+          fi
