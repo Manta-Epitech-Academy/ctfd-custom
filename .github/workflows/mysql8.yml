@@ -1,13 +1,7 @@
 ---
 name: CTFd MySQL 8.0 CI
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: workflow_dispatch
 
 jobs:
   build:

@@ -87,3 +87,31 @@ def test_ratelimit_login_ip_guard():
                 r = client.post("/login", data=data)
                 assert r.status_code == 429
     destroy_ctfd(app)
+
+
+def test_ratelimit_reset_password_isolated_by_token():
+    """Users behind the same IP do not share reset token validation rate limit buckets"""
+    app = create_ctfd()
+    with app.app_context():
+        token1 = "a" * 64
+        token2 = "b" * 64
+        with app.test_client() as client:
+            client.get("/reset_password/{}".format(token1))
+            with client.session_transaction() as sess:
+                nonce = sess.get("nonce")
+            data1 = {"nonce": nonce, "password": "short"}
+
+            for _ in range(10):
+                r = client.post("/reset_password/{}".format(token1), data=data1)
+                assert r.status_code == 200
+
+            r = client.post("/reset_password/{}".format(token1), data=data1)
+            assert r.status_code == 429
+
+            client.get("/reset_password/{}".format(token2))
+            with client.session_transaction() as sess:
+                nonce = sess.get("nonce")
+            data2 = {"nonce": nonce, "password": "short"}
+            r = client.post("/reset_password/{}".format(token2), data=data2)
+            assert r.status_code == 200
+    destroy_ctfd(app)

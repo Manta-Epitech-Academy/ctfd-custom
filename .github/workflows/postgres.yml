@@ -1,13 +1,7 @@
 ---
 name: CTFd Postgres CI
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: workflow_dispatch
 
 jobs:
   build:

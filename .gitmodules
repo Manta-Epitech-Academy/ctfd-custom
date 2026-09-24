@@ -1,0 +1,3 @@
+[submodule "workshop_platform"]
+	path = workshop_platform
+	url = ../workshop_platform.git
