@@ -7,6 +7,7 @@ on:
     branches:
       - master
       - yolo
+      - standalone
     tags:
       - "v*"
   workflow_dispatch:
@@ -34,6 +35,12 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/yolo" ]; then
             owner="${GITHUB_REPOSITORY%%/*}"
             image_name="ghcr.io/${owner@L}/ctfd-yolo"
+          elif [ "${{ github.ref }}" = "refs/heads/standalone" ]; then
+            # The way in without Jump: master with the workshop_platform
+            # submodule on the platform's standalone branch. Its own image,
+            # beside production's, and never a restart of the cluster.
+            owner="${GITHUB_REPOSITORY%%/*}"
+            image_name="ghcr.io/${owner@L}/ctfd-standalone"
           elif [ -n "${{ vars.GHCR_IMAGE_NAME }}" ]; then
             image_name="${{ vars.GHCR_IMAGE_NAME }}"
           else
@@ -49,6 +56,9 @@ jobs:
             image_tag_sha="sha-${GITHUB_SHA::7}"
           elif [ "${{ github.ref }}" = "refs/heads/yolo" ]; then
             image_tag="latest"
+          elif [ "${{ github.ref }}" = "refs/heads/standalone" ]; then
+            image_tag="latest"
+            image_tag_sha="sha-${GITHUB_SHA::7}"
           else
             image_tag="${{ github.event.inputs.tag }}"
           fi
