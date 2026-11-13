@@ -1,3 +1,47 @@
+# 3.8.9 / 2026-10-21
+
+**Security**
+
+- Update pip version to 26.2.2 to remove insecure root CA
+- Update certifi version to 2026.10.19 to remove insecure root CA
+
+# 3.8.8 / 2026-10-02
+
+**Security**
+
+- Fix issue where reset password emails could be sent to incorrect email addresses
+- Fix issue where admins could arbitrarily write files to the filesystem when using certain S3 implementations for file uploads
+
+**API**
+
+- Tokens from banned users are no longer accepted
+- Unlocks can no longer be created against inaccessible challenges
+
+# 3.8.7 / 2026-08-19
+
+**Security**
+
+- Fix issue where the REST API could return the values of Custom Fields despite the field not being set to public
+- Fix issue where a race condition could allow a user to submit more attempts than allowed by a challenge's max attempts setting
+
+**API**
+
+- Deprecate passing a list of fields as the `view` argument to schemas
+
+# 3.8.6 / 2026-06-16
+
+**Security**
+
+- Fix issue where a malicious admin could disclose internal SMTP credentials
+
+**Admin Panel**
+
+- Add UI to mark a correct submission as incorrect
+
+**API**
+
+- Allow `PATCH /api/v1/submissions/[submission_id]` to mark submissions as incorrect
+
 # 3.8.5 / 2026-05-19
 
 **Security**
