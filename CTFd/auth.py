@@ -210,7 +210,7 @@ def reset_password(data=None):
                 ],
             )
 
-        email.forgot_password(email_address)
+        email.forgot_password(user.email)
 
         return render_template(
             "reset_password.html",
